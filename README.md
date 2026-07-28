@@ -7,6 +7,17 @@ Features a complete raycasting engine with textured walls, floor and ceiling ren
 ![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)
 ![Pygame 2.6](https://img.shields.io/badge/pygame-2.6-green)
 
+## Screenshots
+
+**Title Screen**
+![Title Screen](screenshots/screenshot_title.png)
+
+**Gameplay — exploring a level with weapon and HUD**
+![Gameplay](screenshots/screenshot_gameplay.png)
+
+**Combat — enemies in the arena**
+![Combat](screenshots/screenshot_combat.png)
+
 ## Quick Start
 
 ```bash
@@ -91,7 +102,7 @@ Alert triggers when the enemy sees the player via ray-based line-of-sight check 
 | **Shotgun** | 12 x7 | 0.9s | Shells | Spread shot, devastating at close range |
 | **Chaingun** | 12 | 0.12s | Bullets | Rapid fire, moderate damage |
 
-Weapon sprites are pre-built as 64x64 RGBA textures and rendered via mask-based blitting for performance. Muzzle flash overlays appear briefly on fire.
+Weapon sprites are pre-built as 64x64 RGBA textures and scaled 2x (128x128 on screen) via mask-based blitting for performance. Muzzle flash overlays appear briefly on fire.
 
 ### Items
 
@@ -169,6 +180,7 @@ pyg/
 ├── menu.py              # Title, level select, pause, victory, death screens
 ├── sound.py             # Procedural sound effects (21 sounds)
 ├── texture_manager.py   # Procedural wall/floor/ceiling texture generation
+├── screenshots/         # Game screenshots for documentation
 └── assets/              # Directory structure (unused — all generated)
 ```
 
@@ -182,13 +194,13 @@ Each frame follows this sequence:
 2. **Render floor/ceiling** (`renderer.py`) — Vectorized NumPy batch operation with textured floor and ceiling, applying distance-based shading
 3. **Render walls** (`renderer.py`) — Draws textured wall columns with N/S side darkening, per-column vectorized inner loop
 4. **Render sprites** (`sprite_renderer.py`) — Projects billboarded sprites (enemies, items) onto screen, sorts far-to-near, clips against z-buffer with alpha transparency
-5. **Render weapon** (`weapon.py`) — Overlays weapon sprite via pre-built mask arrays with bob animation and muzzle flash
+5. **Render weapon** (`weapon.py`) — Overlays 128x128 weapon sprite (2x scale) via pre-built mask arrays with bob animation and muzzle flash; positioned low to keep view clear
 6. **Render HUD** (`hud.py`) — Status bar, minimap overlay, messages
-7. **Scale to display** — Internal 320x200 buffer scaled to 640x480 window
+7. **Scale to display** — Internal 320x200 buffer scaled to 1200x900 window (3.75x)
 
 ### Performance
 
-- Internal resolution: 320x200 (scaled to 640x480 for retro look)
+- Internal resolution: 320x200 (scaled to 1200x900 for retro look)
 - All textures/sprites generated as NumPy arrays at startup
 - Floor/ceiling rendering fully vectorized (single batched numpy operation per frame)
 - Weapon sprites pre-built as mask+RGB arrays for fast blitting
@@ -207,8 +219,8 @@ All game parameters are in `settings.py`. Key values:
 # Display
 INTERNAL_WIDTH = 320      # Render resolution width
 INTERNAL_HEIGHT = 200     # Render resolution height
-SCREEN_WIDTH = 640        # Window width
-SCREEN_HEIGHT = 480       # Window height
+SCREEN_WIDTH = 1200       # Window width
+SCREEN_HEIGHT = 900       # Window height
 FPS = 60                  # Target framerate
 
 # Gameplay
