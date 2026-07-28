@@ -60,6 +60,13 @@ class Menu:
                     self.selected = 0
                     return 'quit'
 
+        elif self.state == 'final_victory':
+            if event.type == pygame.KEYDOWN:
+                if event.key in (pygame.K_RETURN, pygame.K_SPACE, pygame.K_ESCAPE):
+                    self.state = 'title'
+                    self.selected = 0
+                    return 'quit'
+
         return None
 
     def update(self, dt):
@@ -79,6 +86,8 @@ class Menu:
             self._render_pause(screen)
         elif self.state == 'victory':
             self._render_victory(screen)
+        elif self.state == 'final_victory':
+            self._render_final_victory(screen)
 
     def _render_title(self, screen):
         title = self.big_font.render("PYG DOOM", True, RED)
@@ -152,4 +161,20 @@ class Menu:
 
         hint = self.font.render("ENTER for next level, ESC for menu", True, WHITE)
         hint_rect = hint.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 20))
+        screen.blit(hint, hint_rect)
+
+    def _render_final_victory(self, screen):
+        import math
+        glow = int(128 + 127 * math.sin(self.title_timer * 2))
+        
+        title = self.big_font.render("CONGRATULATIONS!", True, (glow, 255, glow))
+        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 60))
+        screen.blit(title, title_rect)
+        
+        subtitle = self.font.render("You have completed all challenges!", True, YELLOW)
+        sub_rect = subtitle.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 10))
+        screen.blit(subtitle, sub_rect)
+        
+        hint = self.font.render("Press ENTER or ESC to return to menu", True, WHITE)
+        hint_rect = hint.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 40))
         screen.blit(hint, hint_rect)

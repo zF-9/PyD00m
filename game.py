@@ -118,6 +118,13 @@ class Game:
                         self.menu.state = 'title'
                     return None
 
+                if self.state == 'final_victory':
+                    result = self.menu.handle_event(event)
+                    if result == 'quit':
+                        self.state = 'menu'
+                        self.menu.state = 'title'
+                    return None
+
                 if not self.player.alive and event.key == pygame.K_r:
                     self.reset_level()
                     self.state = 'playing'
@@ -215,8 +222,12 @@ class Game:
         if self.game_map.is_exit(self.player.x, self.player.y):
             alive_enemies = sum(1 for e in self.enemies if e.alive)
             if alive_enemies == 0:
-                self.state = 'victory'
-                self.menu.state = 'victory'
+                if self.current_level_index >= len(ALL_LEVELS) - 1:
+                    self.state = 'final_victory'
+                    self.menu.state = 'final_victory'
+                else:
+                    self.state = 'victory'
+                    self.menu.state = 'victory'
 
     def render(self):
         if self.state == 'menu':

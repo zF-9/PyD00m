@@ -2,7 +2,7 @@
 
 A Doom-style first-person shooter built from scratch in Python using Pygame.
 
-Features a complete raycasting engine with textured walls, floor and ceiling rendering, billboarded sprites with animation, enemy AI with pathfinding, multiple weapons, doors, items, and a 3-level campaign. All assets are procedurally generated at runtime.
+Features a complete raycasting engine with textured walls, floor and ceiling rendering, billboarded sprites with animation, enemy AI with pathfinding, multiple weapons, doors, items, and a 4-level campaign. All assets are procedurally generated at runtime.
 
 ![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)
 ![Pygame 2.6](https://img.shields.io/badge/pygame-2.6-green)
@@ -56,8 +56,9 @@ No other dependencies. All textures, sprites, and sounds are generated procedura
 | E1M1 | Tech Base | 8 | Large map with multiple rooms, doors, and a key hunt |
 | E1M2 | Hellish Outpost | 10 | Medium map with tighter corridors and more enemies |
 | E1M3 | Fortress of Doom | 9 | Compact arena-style map with boss-tier enemies |
+| E1M4 | The Final Challenge | 10 | Puzzle map with key hunts, locked rooms, and final boss |
 
-Clear all enemies in a level and reach the exit tile to advance. Complete all 3 levels to win. Level states (doors, enemies) reset on reload.
+Clear all enemies in a level and reach the exit tile to advance. Complete all 4 levels to win. Level states (doors, enemies) reset on reload.
 
 ### Enemies
 
@@ -102,7 +103,7 @@ Alert triggers when the enemy sees the player via ray-based line-of-sight check 
 | **Shotgun** | 12 x7 | 0.9s | Shells | Spread shot, devastating at close range |
 | **Chaingun** | 12 | 0.12s | Bullets | Rapid fire, moderate damage |
 
-Weapon sprites are pre-built as 64x64 RGBA textures and scaled 2x (128x128 on screen) via mask-based blitting for performance. Muzzle flash overlays appear briefly on fire.
+Weapon sprites are pre-built as 64x64 RGBA textures and scaled 2x (128x128 on screen) via mask-based blitting for performance. Muzzle flash overlays appear briefly on fire with animated starburst patterns and weapon recoil.
 
 ### Items
 
@@ -125,6 +126,11 @@ Weapon sprites are pre-built as 64x64 RGBA textures and scaled 2x (128x128 on sc
 - **Blue doors**: Require red key to open
 
 Doors animate open/closed at 2.0 speed. Open doors become walkable; closed doors block both player and enemies. Door state resets when reloading a level.
+
+### Victory Progression
+
+- **Levels 1-3**: Clear all enemies and reach exit → "LEVEL COMPLETE!" screen → press ENTER for next level
+- **Level 4 (Final)**: Clear all enemies and reach exit → "CONGRATULATIONS!" screen with pulsing text → press ENTER or ESC to return to main menu
 
 ## Sound Effects
 
@@ -168,7 +174,7 @@ pyg/
 ├── game.py              # Main game loop, state management, event handling
 ├── settings.py          # All constants, weapon/enemy/item definitions
 ├── player.py            # Player movement, collision, input, health
-├── map.py               # 3 level layouts, GameMap class with doors
+├── map.py               # 4 level layouts, GameMap class with doors
 ├── raycaster.py         # DDA raycasting engine with z-buffer
 ├── renderer.py          # Vectorized floor/ceiling/wall rendering
 ├── sprite_renderer.py   # Billboarded sprite rendering with z-buffer clip
@@ -177,7 +183,7 @@ pyg/
 ├── weapon.py            # Weapon system, hitscan/melee, combat resolution
 ├── item.py              # Pickups (health, ammo, keys, weapons)
 ├── hud.py               # Status bar, minimap, damage flash, messages
-├── menu.py              # Title, level select, pause, victory, death screens
+├── menu.py              # Title, level select, pause, victory, final victory screens
 ├── sound.py             # Procedural sound effects (21 sounds)
 ├── texture_manager.py   # Procedural wall/floor/ceiling texture generation
 ├── screenshots/         # Game screenshots for documentation
@@ -194,7 +200,7 @@ Each frame follows this sequence:
 2. **Render floor/ceiling** (`renderer.py`) — Vectorized NumPy batch operation with textured floor and ceiling, applying distance-based shading
 3. **Render walls** (`renderer.py`) — Draws textured wall columns with N/S side darkening, per-column vectorized inner loop
 4. **Render sprites** (`sprite_renderer.py`) — Projects billboarded sprites (enemies, items) onto screen, sorts far-to-near, clips against z-buffer with alpha transparency
-5. **Render weapon** (`weapon.py`) — Overlays 128x128 weapon sprite (2x scale) via pre-built mask arrays with bob animation and muzzle flash; positioned low to keep view clear
+5. **Render weapon** (`weapon.py`) — Overlays 128x128 weapon sprite (2x scale) via pre-built mask arrays with bob animation, muzzle flash with 3 starburst patterns, and recoil animation; positioned low to keep view clear
 6. **Render HUD** (`hud.py`) — Status bar, minimap overlay, messages
 7. **Scale to display** — Internal 320x200 buffer scaled to 1200x900 window (3.75x)
 

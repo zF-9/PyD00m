@@ -6,11 +6,12 @@ from settings import WEAPONS, TEXTURE_SIZE, INTERNAL_WIDTH, INTERNAL_HEIGHT
 class WeaponSystem:
     def __init__(self):
         self.fire_flash_timer = 0
-        self.current_anim_frame = 0
+        self.anim_timer = 0
+        self.anim_frame = 0
         self.bob_timer = 0
         self.projectiles = []
         self._weapon_surfs = {}
-        self._flash_surf = None
+        self._flash_surfs = []
         self._generate_weapon_textures()
 
     def _generate_weapon_textures(self):
@@ -22,17 +23,50 @@ class WeaponSystem:
         self.weapon_textures['shotgun'] = self._make_shotgun(S)
         self.weapon_textures['chaingun'] = self._make_chaingun(S)
 
-        self.flash_texture = np.zeros((16, 16, 4), dtype=np.uint8)
-        yy, xx = np.mgrid[0:16, 0:16]
-        dist = np.sqrt((xx - 8)**2 + (yy - 8)**2).astype(np.float64)
-        mask = dist < 8
-        brightness = (255 * (1 - dist / 8)).astype(np.int32)
-        self.flash_texture[mask, 0] = 255
-        self.flash_texture[mask, 1] = np.clip(brightness[mask] + 100, 0, 255)
-        self.flash_texture[mask, 2] = (brightness[mask] // 2).astype(np.uint8)
-        self.flash_texture[mask, 3] = 255
-
+        self._generate_muzzle_flashes()
         self._prebuild_surfs()
+
+    def _generate_muzzle_flashes(self):
+        self.muzzle_flashes = []
+
+        flash1 = np.zeros((32, 32, 4), dtype=np.uint8)
+        yy, xx = np.ogrid[:32, :32]
+        dist = np.sqrt((xx - 16)**2 + (yy - 16)**2).astype(np.float64)
+        angle = np.arctan2(yy - 16, xx - 16)
+        rays = (np.abs(np.sin(angle * 4)) > 0.3).astype(np.float64)
+        brightness = np.clip(1.0 - dist / 16, 0, 1) * (0.6 + 0.4 * rays)
+        mask = dist < 16
+        flash1[mask, 0] = (255 * brightness[mask]).astype(np.uint8)
+        flash1[mask, 1] = (220 * brightness[mask]).astype(np.uint8)
+        flash1[mask, 2] = (80 * brightness[mask]).astype(np.uint8)
+        flash1[mask, 3] = (255 * brightness[mask]).astype(np.uint8)
+        self.muzzle_flashes.append(flash1)
+
+        flash2 = np.zeros((40, 40, 4), dtype=np.uint8)
+        yy, xx = np.ogrid[:40, :40]
+        dist = np.sqrt((xx - 20)**2 + (yy - 20)**2).astype(np.float64)
+        angle = np.arctan2(yy - 20, xx - 20)
+        rays = (np.abs(np.sin(angle * 6)) > 0.25).astype(np.float64)
+        brightness = np.clip(1.0 - dist / 20, 0, 1) * (0.7 + 0.3 * rays)
+        mask = dist < 20
+        flash2[mask, 0] = np.clip(255 * brightness[mask] + 50, 0, 255).astype(np.uint8)
+        flash2[mask, 1] = (240 * brightness[mask]).astype(np.uint8)
+        flash2[mask, 2] = (120 * brightness[mask]).astype(np.uint8)
+        flash2[mask, 3] = (255 * brightness[mask]).astype(np.uint8)
+        self.muzzle_flashes.append(flash2)
+
+        flash3 = np.zeros((28, 28, 4), dtype=np.uint8)
+        yy, xx = np.ogrid[:28, :28]
+        dist = np.sqrt((xx - 14)**2 + (yy - 14)**2).astype(np.float64)
+        angle = np.arctan2(yy - 14, xx - 14)
+        rays = (np.abs(np.sin(angle * 5)) > 0.35).astype(np.float64)
+        brightness = np.clip(1.0 - dist / 14, 0, 1) * (0.5 + 0.5 * rays)
+        mask = dist < 14
+        flash3[mask, 0] = (200 * brightness[mask]).astype(np.uint8)
+        flash3[mask, 1] = (180 * brightness[mask]).astype(np.uint8)
+        flash3[mask, 2] = (60 * brightness[mask]).astype(np.uint8)
+        flash3[mask, 3] = (220 * brightness[mask]).astype(np.uint8)
+        self.muzzle_flashes.append(flash3)
 
     def _fill_rect(self, tex, y0, y1, x0, x1, color):
         tex[y0:y1, x0:x1, 0] = color[0]
@@ -88,6 +122,15 @@ class WeaponSystem:
 
         return tex
 
+    def _make_chainsaw_fire(self, S):
+        tex = self._make_chainsaw(S)
+        spark = (255, 200, 50)
+        self._fill_rect(tex, 6, 10, 29, 31, spark)
+        self._fill_rect(tex, 8, 12, 27, 29, spark)
+        self._fill_rect(tex, 6, 10, 33, 35, spark)
+        self._fill_rect(tex, 12, 16, 30, 34, (255, 150, 30))
+        return tex
+
     def _make_pistol(self, S):
         tex = np.zeros((S, S, 4), dtype=np.uint8)
         metal = (145, 145, 150)
@@ -118,6 +161,14 @@ class WeaponSystem:
 
         self._fill_rect(tex, 34, 38, 20, 24, dark_metal)
 
+        return tex
+
+    def _make_pistol_fire(self, S):
+        tex = self._make_pistol(S)
+        for y in range(40, 64):
+            for x in range(26, 38):
+                tex[y-2, x] = tex[y, x].copy()
+        self._fill_rect(tex, 12, 18, 26, 38, metal := (155, 155, 160))
         return tex
 
     def _make_shotgun(self, S):
@@ -153,6 +204,16 @@ class WeaponSystem:
 
         self._fill_rect(tex, 30, 34, 22, 25, barrel_dark)
 
+        return tex
+
+    def _make_shotgun_fire(self, S):
+        tex = self._make_shotgun(S)
+        for y in range(28, 64):
+            for x in range(24, 40):
+                if y-3 >= 0:
+                    tex[y, x] = tex[y-3, x].copy() if y-3 >= 28 else tex[y, x]
+        self._fill_rect(tex, 20, 28, 24, 40, (140, 90, 50))
+        self._fill_rect(tex, 21, 27, 25, 39, (165, 115, 70))
         return tex
 
     def _make_chaingun(self, S):
@@ -198,8 +259,20 @@ class WeaponSystem:
 
         return tex
 
+    def _make_chaingun_fire(self, S):
+        tex = self._make_chaingun(S)
+        for y in range(6, 33):
+            for x in range(24, 40):
+                if x == 27 or x == 37:
+                    if y-2 >= 4:
+                        tex[y, x] = tex[y-2, x].copy()
+        self._fill_rect(tex, 4, 8, 26, 28, (160, 160, 168))
+        self._fill_rect(tex, 4, 8, 36, 38, (160, 160, 168))
+        return tex
+
     def _prebuild_surfs(self):
         weapon_scale = 2
+        self._weapon_surfs = {}
         for name, tex in self.weapon_textures.items():
             alpha = tex[:, :, 3]
             visible = alpha > 128
@@ -210,21 +283,29 @@ class WeaponSystem:
             rgb = np.repeat(np.repeat(tex[:, :, :3], weapon_scale, axis=0), weapon_scale, axis=1)
             self._weapon_surfs[name] = (rgb, mask, scaled_w, scaled_h)
 
-        flash_alpha = self.flash_texture[:, :, 3] > 0
-        flash_rgb = self.flash_texture[:, :, :3]
-        self._flash_mask = flash_alpha
-        self._flash_rgb = flash_rgb
-
-    def get_weapon_texture(self, weapon_name, firing=False):
-        return self.weapon_textures.get(weapon_name, self.weapon_textures['pistol'])
+        self._flash_surfs = []
+        flash_scale = 3
+        for flash_tex in self.muzzle_flashes:
+            alpha = flash_tex[:, :, 3] > 50
+            scaled_w = flash_tex.shape[1] * flash_scale
+            scaled_h = flash_tex.shape[0] * flash_scale
+            mask = np.repeat(np.repeat(alpha, flash_scale, axis=0), flash_scale, axis=1)
+            rgb = np.repeat(np.repeat(flash_tex[:, :, :3], flash_scale, axis=0), flash_scale, axis=1)
+            self._flash_surfs.append((rgb, mask, scaled_w, scaled_h))
 
     def render_weapon(self, framebuffer, weapon_name, firing, bob_offset=0):
+        base_name = weapon_name.split('_fire')[0]
         rgb, mask, sw, sh = self._weapon_surfs.get(
-            weapon_name, self._weapon_surfs['pistol']
+            weapon_name, self._weapon_surfs.get(base_name, self._weapon_surfs['pistol'])
         )
 
+        recoil = 0
+        if firing and self.fire_flash_timer > 0:
+            flash_progress = self.fire_flash_timer / 0.08
+            recoil = int(4 * flash_progress)
+
         start_x = INTERNAL_WIDTH // 2 - sw // 2 + int(bob_offset * 5)
-        start_y = INTERNAL_HEIGHT - sh + 20
+        start_y = INTERNAL_HEIGHT - sh + 20 + recoil
 
         sx0 = max(0, -start_x)
         sy0 = max(0, -start_y)
@@ -245,18 +326,24 @@ class WeaponSystem:
         fb_region = framebuffer[fy0:fy1, fx0:fx1]
         fb_region[region_mask] = region_rgb[region_mask]
 
-        if firing and self.fire_flash_timer > 0:
-            flash_y = start_y - 20
-            flash_x = INTERNAL_WIDTH // 2 - 8
+        if firing and self.fire_flash_timer > 0 and self._flash_surfs:
+            flash_idx = min(2 - int(self.fire_flash_timer / 0.05), len(self._flash_surfs) - 1)
+            flash_idx = max(0, flash_idx)
+            frgb, fmask, fsw, fsh = self._flash_surfs[flash_idx]
+
+            flash_y = start_y - fsh // 2 + 10
+            flash_x = INTERNAL_WIDTH // 2 - fsw // 2
+
             fsx0 = max(0, -flash_x)
             fsy0 = max(0, -flash_y)
-            fsx1 = min(16, INTERNAL_WIDTH - flash_x)
-            fsy1 = min(16, INTERNAL_HEIGHT - flash_y)
+            fsx1 = min(fsw, INTERNAL_WIDTH - flash_x)
+            fsy1 = min(fsh, INTERNAL_HEIGHT - flash_y)
+
             if fsx0 < fsx1 and fsy0 < fsy1:
-                fmask = self._flash_mask[fsy0:fsy1, fsx0:fsx1]
-                frgb = self._flash_rgb[fsy0:fsy1, fsx0:fsx1]
+                fm = fmask[fsy0:fsy1, fsx0:fsx1]
+                fr = frgb[fsy0:fsy1, fsx0:fsx1]
                 framebuffer[flash_y + fsy0:flash_y + fsy1,
-                            flash_x + fsx0:flash_x + fsx1][fmask] = frgb[fmask]
+                            flash_x + fsx0:flash_x + fsx1][fm] = fr[fm]
 
     def can_fire(self, player, weapon_name):
         w = WEAPONS[weapon_name]
@@ -273,7 +360,8 @@ class WeaponSystem:
         w = WEAPONS[weapon_name]
         player.use_ammo(weapon_name)
         player.shoot_cooldown = w['fire_rate']
-        self.fire_flash_timer = 0.1
+        self.fire_flash_timer = 0.08
+        self.anim_frame = 1
 
         total_damage = 0
         hits = []
@@ -335,4 +423,6 @@ class WeaponSystem:
     def update(self, dt):
         if self.fire_flash_timer > 0:
             self.fire_flash_timer -= dt
+            if self.fire_flash_timer <= 0:
+                self.anim_frame = 0
         self.bob_timer += dt
